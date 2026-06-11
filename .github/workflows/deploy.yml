@@ -22,8 +22,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
+      - run: npm install
+      - name: Verify adapter-static loaded
+        run: |
+          node --input-type=module -e "
+            import('./svelte.config.js')
+              .then(m => {
+                if (!m.default?.kit?.adapter) { console.error('adapter-static not loaded'); process.exit(1); }
+                console.log('adapter OK');
+              })
+              .catch(e => { console.error(e.message); process.exit(1); })
+          "
       - run: npm run build
         env:
           BASE_PATH: /tmp-instance-tool-internal

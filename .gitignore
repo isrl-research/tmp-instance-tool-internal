@@ -21,3 +21,7 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Lock files (platform-specific, regenerated on CI)
+package-lock.json
+bun.lock
