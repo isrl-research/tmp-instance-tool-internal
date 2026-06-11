@@ -22,8 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
-      - run: npm install @sveltejs/adapter-static
+          cache: npm
+      - run: npm ci
       - run: npm run build
         env:
           BASE_PATH: /tmp-instance-tool-internal
