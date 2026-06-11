@@ -23,6 +23,7 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - run: npm install @sveltejs/adapter-static
       - run: npm run build
         env:
           BASE_PATH: /tmp-instance-tool-internal
