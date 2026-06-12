@@ -12,7 +12,7 @@
 	const GH_CFG_KEY = 'ifid_gh_config';
 
 	// Hardcoded target repo
-	const PUSH_OWNER = 'isrl-research';
+	const PUSH_OWNER = 'nivedya02';
 	const PUSH_REPO = 'tmp-instance';
 
 	let tab = $state('sources');
