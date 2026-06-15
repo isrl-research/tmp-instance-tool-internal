@@ -115,7 +115,7 @@
 									<button onclick={cancelEdit} class="text-gray-500 hover:text-gray-700 text-xs">Cancel</button>
 								</td>
 							</tr>
-						{#if deleteId === f.id}
+						{:else if deleteId === f.id}
 							<tr class="bg-red-50">
 								<td colspan="2" class="px-4 py-2 text-sm text-red-700">
 									Delete <strong>{f.id}</strong>?
