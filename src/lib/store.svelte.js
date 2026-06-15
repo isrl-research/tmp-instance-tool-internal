@@ -135,7 +135,11 @@ class IFIDStore {
 	}
 	deleteForm(id) {
 		this.forms = this.forms.filter((f) => f.id !== id);
-		this.relations = this.relations.filter((r) => r.type !== 'FormOf' || r.form !== id);
+		this.relations = this.relations.filter((r) => {
+			if (r.type === 'FormOf') return r.form !== id && r.origin !== id;
+			if (r.type === 'VarietyOf') return r.base !== id && r.variety !== id;
+			return true;
+		});
 		this.#persist();
 	}
 

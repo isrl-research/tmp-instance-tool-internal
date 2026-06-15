@@ -20,12 +20,22 @@
 	const formOfs = $derived(store.relations.filter((r) => r.type === 'FormOf'));
 	const varietyOfs = $derived(store.relations.filter((r) => r.type === 'VarietyOf'));
 
-	function sourceName(id) { return store.sources.find((s) => s.id === id)?.name ?? id; }
-	function formId(id) { return store.forms.find((f) => f.id === id)?.id ?? id; }
+	function sourceName(id) { 
+		const s = store.sources.find((s) => s.id === id);
+		if (s) return s.name;
+		const f = store.forms.find((f) => f.id === id);
+		if (f) return `[Form] ${f.id}`;
+		return id;
+	}
+
+	const originOptions = $derived([
+		...store.sources.map(s => ({ id: s.id, label: s.name })),
+		...store.forms.map(f => ({ id: f.id, label: `[Form] ${f.id}` }))
+	]);
 
 	// FormOf
 	function addFormOf() {
-		if (!fof.origin) { fofError = 'Origin source is required'; return; }
+		if (!fof.origin) { fofError = 'Origin (Source/Form) is required'; return; }
 		if (!fof.form) { fofError = 'Form is required'; return; }
 		if (!fof.processing_methods.length) { fofError = 'At least one processing method is required'; return; }
 		store.addRelation({ type: 'FormOf', origin: fof.origin, form: fof.form, processing_methods: fof.processing_methods });
@@ -48,8 +58,8 @@
 
 	// VarietyOf
 	function addVarietyOf() {
-		if (!vof.base) { vofError = 'Base source is required'; return; }
-		if (!vof.variety) { vofError = 'Variety source is required'; return; }
+		if (!vof.base) { vofError = 'Base (Source/Form) is required'; return; }
+		if (!vof.variety) { vofError = 'Variety (Source/Form) is required'; return; }
 		if (vof.base === vof.variety) { vofError = 'Base and variety cannot be the same'; return; }
 		store.addRelation({ type: 'VarietyOf', base: vof.base, variety: vof.variety });
 		vof = { base: '', variety: '' };
@@ -75,23 +85,23 @@
 
 	<!-- FormOf -->
 	<div class="space-y-4">
-		<h3 class="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">FormOf — source → form via process</h3>
+		<h3 class="text-sm font-semibold text-gray-700 border-b border-gray-200 pb-2">FormOf — origin → form via process</h3>
 
 		<div class="bg-white border border-gray-200 rounded-lg p-4">
 			<div class="grid grid-cols-2 gap-3 mb-3">
 				<div>
-					<label class="block text-xs text-gray-500 mb-1">Origin (Source)</label>
+					<label class="block text-xs text-gray-500 mb-1">Origin (Source or Form)</label>
 					<select
 						bind:value={fof.origin}
 						class="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white w-full focus:outline-none focus:ring-1 focus:ring-teal-500"
 					>
-						<option value="" disabled>Select source…</option>
-						{#each store.sources as s}
-							<option value={s.id}>{s.name}</option>
+						<option value="" disabled>Select origin…</option>
+						{#each originOptions as opt}
+							<option value={opt.id}>{opt.label}</option>
 						{/each}
 					</select>
-					{#if !store.sources.length}
-						<p class="text-xs text-amber-600 mt-1">Add sources first.</p>
+					{#if !originOptions.length}
+						<p class="text-xs text-amber-600 mt-1">Add sources or forms first.</p>
 					{/if}
 				</div>
 				<div>
@@ -150,8 +160,8 @@
 											bind:value={fofEditDraft.origin}
 											class="border border-gray-300 rounded px-2 py-1 text-sm bg-white w-full"
 										>
-											{#each store.sources as s}
-												<option value={s.id}>{s.name}</option>
+											{#each originOptions as opt}
+												<option value={opt.id}>{opt.label}</option>
 											{/each}
 										</select>
 									</td>
@@ -224,26 +234,26 @@
 		<div class="bg-white border border-gray-200 rounded-lg p-4">
 			<div class="grid grid-cols-2 gap-3 mb-3">
 				<div>
-					<label class="block text-xs text-gray-500 mb-1">Base Source</label>
+					<label class="block text-xs text-gray-500 mb-1">Base (Source or Form)</label>
 					<select
 						bind:value={vof.base}
 						class="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white w-full focus:outline-none focus:ring-1 focus:ring-teal-500"
 					>
 						<option value="" disabled>Select base…</option>
-						{#each store.sources as s}
-							<option value={s.id}>{s.name}</option>
+						{#each originOptions as opt}
+							<option value={opt.id}>{opt.label}</option>
 						{/each}
 					</select>
 				</div>
 				<div>
-					<label class="block text-xs text-gray-500 mb-1">Variety (sub-type)</label>
+					<label class="block text-xs text-gray-500 mb-1">Variety (Source or Form)</label>
 					<select
 						bind:value={vof.variety}
 						class="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white w-full focus:outline-none focus:ring-1 focus:ring-teal-500"
 					>
 						<option value="" disabled>Select variety…</option>
-						{#each store.sources as s}
-							<option value={s.id}>{s.name}</option>
+						{#each originOptions as opt}
+							<option value={opt.id}>{opt.label}</option>
 						{/each}
 					</select>
 				</div>
@@ -273,15 +283,15 @@
 								<tr class="bg-teal-50">
 									<td class="px-3 py-2">
 										<select bind:value={vofEditDraft.variety} class="border border-gray-300 rounded px-2 py-1 text-sm bg-white w-full">
-											{#each store.sources as s}
-												<option value={s.id}>{s.name}</option>
+											{#each originOptions as opt}
+												<option value={opt.id}>{opt.label}</option>
 											{/each}
 										</select>
 									</td>
 									<td class="px-3 py-2">
 										<select bind:value={vofEditDraft.base} class="border border-gray-300 rounded px-2 py-1 text-sm bg-white w-full">
-											{#each store.sources as s}
-												<option value={s.id}>{s.name}</option>
+											{#each originOptions as opt}
+												<option value={opt.id}>{opt.label}</option>
 											{/each}
 										</select>
 									</td>

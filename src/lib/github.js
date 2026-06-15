@@ -14,8 +14,14 @@ export function parseGithubRawUrl(url) {
 }
 
 function ghHeaders(token) {
+	const t = (token || '').trim();
+	const isFineGrained = t.startsWith('github_pat_');
+	const scheme = isFineGrained ? 'Bearer' : 'token'; // Fine-grained MUST use Bearer
+	
+	console.log(`[GH Auth] Scheme: ${scheme}, Prefix: ${t.substring(0, 10)}...`);
+	
 	return {
-		Authorization: `token ${token}`,
+		Authorization: `${scheme} ${t}`,
 		Accept: 'application/vnd.github+json',
 		'X-GitHub-Api-Version': '2022-11-28'
 	};
@@ -26,8 +32,18 @@ export async function commitFile({ token, owner, repo, branch, path, content, me
 	const headers = ghHeaders(token);
 
 	let sha;
-	const getResp = await fetch(`${base}?ref=${branch}`, { headers });
-	if (getResp.ok) sha = (await getResp.json()).sha;
+	try {
+		const getResp = await fetch(`${base}?ref=${branch}`, { headers });
+		if (getResp.ok) {
+			sha = (await getResp.json()).sha;
+		} else if (getResp.status !== 404) {
+			const err = await getResp.json().catch(() => ({}));
+			throw new Error(`GET ${getResp.status}: ${err.message || 'Access denied'}`);
+		}
+	} catch (e) {
+		if (e.message.includes('GET')) throw e;
+		// Fall through for network errors or 404s
+	}
 
 	const body = { message, content: btoa(unescape(encodeURIComponent(content))), branch };
 	if (sha) body.sha = sha;
@@ -37,9 +53,10 @@ export async function commitFile({ token, owner, repo, branch, path, content, me
 		headers: { ...headers, 'Content-Type': 'application/json' },
 		body: JSON.stringify(body)
 	});
+
 	if (!putResp.ok) {
 		const err = await putResp.json().catch(() => ({}));
-		throw new Error(err.message ?? `HTTP ${putResp.status}`);
+		throw new Error(`PUT ${putResp.status}: ${err.message || 'Access denied'}`);
 	}
 	return putResp.json();
 }
