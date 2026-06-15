@@ -9,9 +9,10 @@ function toVar(name) {
 
 function topoSort(nodes, relations) {
 	const parentOf = {};
-	relations
-		.filter((r) => r.type === 'VarietyOf')
-		.forEach((r) => { parentOf[r.variety] = r.base; });
+	relations.forEach((r) => {
+		if (r.type === 'VarietyOf') parentOf[r.variety] = r.base;
+		if (r.type === 'FormOf') parentOf[r.form] = r.origin;
+	});
 
 	const visited = new Set();
 	const out = [];
@@ -49,7 +50,50 @@ export function generatePython(state) {
 	];
 
 	const sorted = topoSort(allNodes, relations);
-...
+
+	// Collect custom values actually in use
+	const usedCustomMethods = new Set();
+	const usedCustomMatterStates = new Set();
+	const usedCustomSourceTypes = new Set();
+
+	relations.forEach((r) => {
+		if (r.type === 'FormOf') {
+			(r.processing_methods ?? []).forEach((m) => {
+				if (customMethods.includes(m)) usedCustomMethods.add(m);
+			});
+		}
+	});
+	forms.forEach((f) => {
+		if (customMatterStates.includes(f.matter_state)) usedCustomMatterStates.add(f.matter_state);
+	});
+	sources.forEach((s) => {
+		if (customSourceTypes.includes(s.type)) usedCustomSourceTypes.add(s.type);
+	});
+
+	const L = [];
+
+	L.push(`# IFID_STATE: ${btoa(JSON.stringify(state))}`);
+	L.push('');
+
+	const hasCustom =
+		usedCustomMethods.size || usedCustomMatterStates.size || usedCustomSourceTypes.size;
+	if (hasCustom) {
+		L.push('# ── New enum values — add these to enum_requests.md ──────────────────');
+		usedCustomMethods.forEach((m) =>
+			L.push(`# NEW  processing_method: "${m}"`)
+		);
+		usedCustomMatterStates.forEach((m) =>
+			L.push(`# NEW  matter_state: "${m}"`)
+		);
+		usedCustomSourceTypes.forEach((m) =>
+			L.push(`# NEW  source_type: "${m}"`)
+		);
+		L.push('# ─────────────────────────────────────────────────────────────────────');
+		L.push('');
+	}
+
+	L.push('from index import Database, Source, IngredientForm, FormOf, VarietyOf');
+	L.push('');
 	L.push('db = Database()');
 	L.push('');
 
