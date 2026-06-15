@@ -115,10 +115,15 @@
 									<button onclick={cancelEdit} class="text-gray-500 hover:text-gray-700 text-xs">Cancel</button>
 								</td>
 							</tr>
-						{:else if deleteId === f.id}
+						{#if deleteId === f.id}
 							<tr class="bg-red-50">
 								<td colspan="2" class="px-4 py-2 text-sm text-red-700">
-									Delete <strong>{f.id}</strong>? All FormOf relations using it will also be removed.
+									Delete <strong>{f.id}</strong>?
+									{#if store.relations.some(r => r.form === f.id || r.origin === f.id || r.base === f.id || r.variety === f.id)}
+										<span class="block text-xs font-semibold mt-1">
+											Warning: This will also remove {store.relations.filter(r => r.form === f.id || r.origin === f.id || r.base === f.id || r.variety === f.id).length} related entries from the Relations tab.
+										</span>
+									{/if}
 								</td>
 								<td class="px-3 py-2 whitespace-nowrap">
 									<button onclick={() => doDelete(f.id)} class="text-red-600 hover:text-red-800 font-medium text-xs mr-2">Delete</button>
