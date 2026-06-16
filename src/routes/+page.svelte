@@ -9,10 +9,12 @@
 	import RelationPanel from '$lib/RelationPanel.svelte';
 	import ProgressPanel from '$lib/ProgressPanel.svelte';
 
-	const GH_CFG_KEY = 'ifid_gh_config';
+	const GH_PWD_KEY = 'ifid_gh_pwd';
+	const GH_TOKEN = import.meta.env.VITE_GH_PAT;
+	const PUSH_PASSWORD = import.meta.env.VITE_PUSH_PASSWORD;
 
 	// Hardcoded target repo
-	const PUSH_OWNER = 'nivedya02';
+	const PUSH_OWNER = 'isrl-research';
 	const PUSH_REPO = 'tmp-instance';
 
 	let tab = $state('sources');
@@ -25,7 +27,7 @@
 
 	// Push config
 	let showCommit = $state(false);
-	let ghToken = $state('');
+	let pushPassword = $state('');
 	let commitBusy = $state(false);
 	let commitError = $state('');
 	let pushUrl = $state('');
@@ -44,15 +46,11 @@
 		await store.init();
 		if (!browser) return;
 		try {
-			const cfg = JSON.parse(localStorage.getItem(GH_CFG_KEY) ?? 'null');
-			if (cfg) ghToken = cfg.token ?? '';
+			const saved = localStorage.getItem(GH_PWD_KEY);
+			if (saved) pushPassword = saved;
 		} catch { /* */ }
 	});
 
-	function saveGhConfig() {
-		if (!browser) return;
-		localStorage.setItem(GH_CFG_KEY, JSON.stringify({ token: ghToken }));
-	}
 
 	function getISTDate() {
 		const now = new Date();
@@ -138,8 +136,10 @@
 	}
 
 	async function pushSession() {
-		if (!ghToken) { commitError = 'GitHub token is required'; return; }
-		saveGhConfig();
+		if (!GH_TOKEN) { commitError = 'GitHub token not configured'; return; }
+		if (!pushPassword) { commitError = 'Password required'; return; }
+		if (pushPassword !== PUSH_PASSWORD) { commitError = 'Incorrect password'; return; }
+
 		commitBusy = true;
 		commitError = '';
 		pushUrl = '';
@@ -148,7 +148,7 @@
 		const slug = sessionSlug();
 		const folder = `${date}/${slug}`;
 		const current = store.snapshot();
-		const base = { token: ghToken, owner: PUSH_OWNER, repo: PUSH_REPO, branch: 'main', message: `${date}: ${slug} session` };
+		const base = { token: GH_TOKEN, owner: PUSH_OWNER, repo: PUSH_REPO, branch: 'main', message: `${date}: ${slug} session` };
 
 		try {
 			await commitFile({ ...base, path: `${folder}.json`, content: JSON.stringify(current, null, 2) });
@@ -158,6 +158,7 @@
 			const enumMd = buildEnumRequests(current, slug, date);
 			if (enumMd) await commitFile({ ...base, path: `${folder}-enum-requests.md`, content: enumMd });
 			pushUrl = `https://github.com/${PUSH_OWNER}/${PUSH_REPO}/tree/main/${date}`;
+			if (browser) localStorage.setItem(GH_PWD_KEY, pushPassword);
 		} catch (e) {
 			commitError = e.message;
 		} finally {
@@ -231,8 +232,9 @@
 			<div class="border-t border-gray-100 bg-gray-50 px-6 py-4 space-y-3">
 				<div class="flex gap-3 items-end">
 					<div class="flex-1">
-						<label class="block text-xs text-gray-500 mb-1">GitHub Token <span class="text-gray-400">(stored locally only)</span></label>
-						<input type="password" bind:value={ghToken} placeholder="ghp_…"
+						<label class="block text-xs text-gray-500 mb-1">Password</label>
+						<input type="password" bind:value={pushPassword} placeholder="Enter password"
+							onkeydown={(e) => e.key === 'Enter' && pushSession()}
 							class="border border-gray-300 rounded px-2 py-1.5 text-sm w-full focus:outline-none focus:ring-1 focus:ring-teal-500" />
 					</div>
 					<div class="text-xs text-gray-400 pb-2">

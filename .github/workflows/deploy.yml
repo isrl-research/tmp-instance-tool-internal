@@ -36,6 +36,8 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /tmp-instance-tool-internal
+          VITE_GH_PAT: ${{ secrets.GH_PAT }}
+          VITE_PUSH_PASSWORD: ${{ secrets.PUSH_PASSWORD }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build
